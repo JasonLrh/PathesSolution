@@ -46,41 +46,83 @@ def process_area(position):
              (int(np.cos(angle_p) * dis_n + x), int(np.sin(angle_p) * dis_n + y))]
     return point
 
-'''
-如果是真机调试
-程序读取摄像头位置(pos)以及反馈的块信息(更新字典)，
-然后计算出当前块的位置(target_position)
-'''
-# t = 0
+
+step = 0
+base_scan = [   [600, 50,  3 * np.pi/4],\
+                [1050, 220, np.pi/2],\
+                [150, 220, np.pi/2],\
+                [150, 520, np.pi/2],\
+                [1050, 520, np.pi/2],
+                ]
+base_scan_step = 0
+
+target_position = base_scan[0]
+solution_count = 0
+
+def on_process():
+    global step, target_position
+    if step == 0:
+        global base_scan_step
+        base_scan_step += 1
+        if base_scan_step >= len(base_scan):
+            step += 1
+            print("next_step")
+            on_process()
+            return
+        target_position = base_scan[base_scan_step]
+    elif step == 1:
+        global solution_count, pos
+        print("exp :", exp_targets[solution_count])
+        target_position = result_pos[exp_targets[solution_count]]
+        delta = list(np.array(pos[0:1]) - np.array(target_position))
+        theta = np.arctan2(delta[1], delta[0])
+        target_position.append(theta)
+        print(target_position)
+        # solution_count += 1
+        # if solution_count == len(exp_targets):
+        #     step += 1
+        #     print("next_step")
+    elif step == 2:
+        pass
+
 
 
 def process_step(im1, im2, cl1, cl2):  
     cnts, heri = cv.findContours((im2), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-    # for i in range(len(cnts)):
-    #     # cnt = cnts[0][i]
-    for i in list(simulation_pos.keys()):
-        if im2[simulation_pos[i][1], simulation_pos[i][0]] != 0:
-            result_pos[i] = simulation_pos[i]
-
     cv.drawContours(cl2, cnts, -1, [255, 0, 255], 8)
+
+    if DEBUG:
+        global simulation_pos
+        for i in list(simulation_pos.keys()):
+            if im2[simulation_pos[i][1], simulation_pos[i][0]] != 0:
+                result_pos[i] = simulation_pos[i]
     
     if DEBUG:# ! simulation : step generate
         global pos, step_angle, step_dis
         delta = list(np.array(pos) - np.array(target_position))
-        if np.abs(delta[0]**2 + delta[1] ** 2) < step_dis:
+        k_state = 0
+        if np.abs(delta[0]**2 + delta[1] ** 2) <= 1.5 * step_dis:
             pos[0] = target_position[0]
             pos[1] = target_position[1]
+            k_state = 1
         else:
             theta = np.arctan2(delta[1], delta[0])
-            pos[0] += np.cos(theta) * step_dis
+            pos[0] -= np.cos(theta) * step_dis
             pos[1] -= np.sin(theta) * step_dis
-        if np.abs(delta[2]) < step_angle:
+        
+        if np.abs(delta[2]) <= step_angle:
             pos[2] = target_position[2]
+            if k_state == 1:
+                k_state = 2
         else:
             if delta[2] > 0:
-                pos[2] += step_angle
-            else:
                 pos[2] -= step_angle
+            else:
+                pos[2] += step_angle
+        cv.line(cl1, (int(pos[0]), int(pos[1])), (int(target_position[0]), int(target_position[1])), [0, 255, 0], 2)
+        cv.line(cl2, (int(pos[0]), int(pos[1])), (int(target_position[0]), int(target_position[1])), [0, 255, 0], 2)
+        if k_state == 2: # arrive at target
+            on_process()
 
 
 if DEBUG: # ! simulation : process tareget
@@ -93,13 +135,6 @@ if DEBUG: # ! simulation : process tareget
             simulation_pos[name] = posa
 
 while True:
-    # pos[0] = 600 + 400 * np.sin(t)
-    # pos[1] = 600 + 400 * np.cos(t)
-    # pos[2] += np.pi/1200
-    # pos[0] = 600 + 400 * np.sin(t)
-    # pos[1] = 600 + 400 * np.cos(t)
-    # pos[2] += np.pi/1200
-    # t += 0.01
     curi = process_area(pos)  # get robot camera position -> curios area
     res1 = cv.fillPoly(img, [np.array(curi)], (255))
     res2 = cv.fillPoly(pros, [np.array(curi)], (255))
@@ -109,11 +144,8 @@ while True:
 
     process_step(res1, res2, rb1, rb2)
 
-    # pos[0] += 1
-    # pos[1] += 1
-    # pos[2] += np.pi/1200
     cv.imshow('img', ui_api.draw_for_output(rb1, rb2, curi))
-    key = cv.waitKey(33)
+    key = cv.waitKey(1)
     if key == ord('q'):
         break
 
