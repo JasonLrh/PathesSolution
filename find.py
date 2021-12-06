@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import cv2 as cv
 import numpy as np
 import random
@@ -81,10 +82,13 @@ def on_process():
             task_progress += 1
         delta = list(np.array(target_position) - np.array(pos[0:1]))
         theta = np.arctan2(delta[1], delta[0])
+        if np.fabs(theta - pos[2]) > np.pi / 2:
+            if theta > pos[2]:
+                theta += np.pi
+            else:
+                theta -= np.pi
         target_position.append(theta)
 
-        # if is_held_block is not True:
-        #     task_progress += 1
         if task_progress == len(exp_targets):
             step += 1
             print("task done.")
@@ -130,17 +134,14 @@ def process_step(im1, im2, cl1, cl2):
         if k_state == 2: # arrive at target
             on_process()
 
-        # siz_of_tgt = [10, 13, 17, 21, 25]
         for i in range(task_progress):
             p = result_pos[exp_targets[i]]
-            # cv.circle(cl1, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
-            # cv.circle(cl2, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
             cv.line(cl1, np.array(p) - 15, np.array(p) + 15, (0, 0, 255), 2)
             cv.line(cl2, np.array(p) - 15, np.array(p) + 15, (0, 0, 255), 2)
 
 
 if DEBUG: # ! simulation : process tareget
-    random.seed(1)
+    random.seed(0)
     for i in ['r', 'b']:
         for j in range(1, 6):
             name = "%c%d" % (i, j)

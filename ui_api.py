@@ -50,23 +50,11 @@ def draw_targets(img_of_raw, img_of_detect):
             color = [255, 0, 0]
 
         cv.circle(img_of_detect, result_pos[i], siz_of_tgt[int(i[1:]) - 1],  color, 2)
-    
-    # global task_progress
-    # print(task_progress)
-    # for i in range(task_progress):
-    #     p = result_pos[exp_targets[i]]
-    #     cv.circle(img_of_detect, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
-    #     cv.circle(img_of_raw   , p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
-    #     cv.line(img_of_detect, np.array(p) - 10, np.array(p) + 10, (0, 0, 255), 2)
-    #     cv.line(img_of_raw, np.array(p) - 10, np.array(p) + 10, (0, 0, 255), 2)
-        
-
 
 def draw_for_output(im1, im2, cur):
 
     draw_map(im1)
     draw_map(im2)
-    # cv.drawContours(img, contours, contourIdx, color)
 
     draw_current_area(im2, cur)
 
