@@ -13,8 +13,8 @@ def draw_map(img):
     cv.line(img, (1199, 1199), (1199, 0),             (255, 255, 0))
     # draw tower bases
     ## TODO : check the position in final rules
-    cv.circle(img, (375       , 600), 25, (0, 255 , 0), 2)
-    cv.circle(img, (1199 - 375, 600), 25, (0, 255 , 0), 2)
+    cv.circle(img, tower_base_1_pos, 25, (0, 255 , 0), 2)
+    cv.circle(img, tower_base_2_pos, 25, (0, 255 , 0), 2)
     cv.rectangle(img, (375 - 25, 600 - 25)       , (375 + 25, 600 + 25)       , (0, 255, 0), 2)
     cv.rectangle(img, (1199 - 375 - 25, 600 - 25), (1199 - 375 + 25, 600 + 25), (0, 255, 0), 2)
 
@@ -41,6 +41,7 @@ def draw_targets(img_of_raw, img_of_detect):
                 color = [255, 0, 0]
 
             cv.circle(img_of_raw, simulation_pos[i], siz_of_tgt[int(i[1:]) - 1],  color, 2)
+            
     for i in list(result_pos.keys()):
         color = [255, 255, 0]
         if i[0] == 'r':
@@ -49,6 +50,16 @@ def draw_targets(img_of_raw, img_of_detect):
             color = [255, 0, 0]
 
         cv.circle(img_of_detect, result_pos[i], siz_of_tgt[int(i[1:]) - 1],  color, 2)
+    
+    # global task_progress
+    # print(task_progress)
+    # for i in range(task_progress):
+    #     p = result_pos[exp_targets[i]]
+    #     cv.circle(img_of_detect, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
+    #     cv.circle(img_of_raw   , p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
+    #     cv.line(img_of_detect, np.array(p) - 10, np.array(p) + 10, (0, 0, 255), 2)
+    #     cv.line(img_of_raw, np.array(p) - 10, np.array(p) + 10, (0, 0, 255), 2)
+        
 
 
 def draw_for_output(im1, im2, cur):

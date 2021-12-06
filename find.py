@@ -16,7 +16,6 @@ if our_team_color != 'r' and our_team_color != 'b':
     print("Error argument. [r] | [b]")
     print("your argument : %s" % our_team_color)
     exit()
-exp_targets = []
 for i in range(5):
     if i % 2 == 0:
         ele = "%s%d" % (our_team_color, 5 - i)
@@ -57,8 +56,7 @@ base_scan = [   [600, 50,  3 * np.pi/4],\
 base_scan_step = 0
 
 target_position = base_scan[0]
-solution_count = 0
-
+is_held_block = False
 def on_process():
     global step, target_position
     if step == 0:
@@ -66,22 +64,30 @@ def on_process():
         base_scan_step += 1
         if base_scan_step >= len(base_scan):
             step += 1
-            print("next_step")
+            print("base scan down.")
             on_process()
             return
         target_position = base_scan[base_scan_step]
     elif step == 1:
-        global solution_count, pos
-        print("exp :", exp_targets[solution_count])
-        target_position = result_pos[exp_targets[solution_count]]
-        delta = list(np.array(pos[0:1]) - np.array(target_position))
+        global task_progress, pos, is_held_block
+        print("exp :", exp_targets[task_progress])
+        print("task progress : ", task_progress)
+        if is_held_block is not True:
+            target_position = result_pos[exp_targets[task_progress]][:]
+            is_held_block = True
+        else:
+            target_position = list(tower_base_2_pos)
+            is_held_block = False
+            task_progress += 1
+        delta = list(np.array(target_position) - np.array(pos[0:1]))
         theta = np.arctan2(delta[1], delta[0])
         target_position.append(theta)
-        print(target_position)
-        # solution_count += 1
-        # if solution_count == len(exp_targets):
-        #     step += 1
-        #     print("next_step")
+
+        # if is_held_block is not True:
+        #     task_progress += 1
+        if task_progress == len(exp_targets):
+            step += 1
+            print("task done.")
     elif step == 2:
         pass
 
@@ -95,20 +101,20 @@ def process_step(im1, im2, cl1, cl2):
         global simulation_pos
         for i in list(simulation_pos.keys()):
             if im2[simulation_pos[i][1], simulation_pos[i][0]] != 0:
-                result_pos[i] = simulation_pos[i]
+                result_pos[i] = simulation_pos[i] 
     
     if DEBUG:# ! simulation : step generate
         global pos, step_angle, step_dis
-        delta = list(np.array(pos) - np.array(target_position))
+        delta = list(np.array(target_position) - np.array(pos))
         k_state = 0
-        if np.abs(delta[0]**2 + delta[1] ** 2) <= 1.5 * step_dis:
+        if np.sqrt(np.abs(delta[0]**2 + delta[1] ** 2)) <= step_dis:
             pos[0] = target_position[0]
             pos[1] = target_position[1]
             k_state = 1
         else:
             theta = np.arctan2(delta[1], delta[0])
-            pos[0] -= np.cos(theta) * step_dis
-            pos[1] -= np.sin(theta) * step_dis
+            pos[0] += np.cos(theta) * step_dis
+            pos[1] += np.sin(theta) * step_dis
         
         if np.abs(delta[2]) <= step_angle:
             pos[2] = target_position[2]
@@ -116,13 +122,21 @@ def process_step(im1, im2, cl1, cl2):
                 k_state = 2
         else:
             if delta[2] > 0:
-                pos[2] -= step_angle
-            else:
                 pos[2] += step_angle
+            else:
+                pos[2] -= step_angle
         cv.line(cl1, (int(pos[0]), int(pos[1])), (int(target_position[0]), int(target_position[1])), [0, 255, 0], 2)
         cv.line(cl2, (int(pos[0]), int(pos[1])), (int(target_position[0]), int(target_position[1])), [0, 255, 0], 2)
         if k_state == 2: # arrive at target
             on_process()
+
+        # siz_of_tgt = [10, 13, 17, 21, 25]
+        for i in range(task_progress):
+            p = result_pos[exp_targets[i]]
+            # cv.circle(cl1, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
+            # cv.circle(cl2, p, siz_of_tgt[int(exp_targets[i][1:]) - 1],  (0, 255, 0), 2)
+            cv.line(cl1, np.array(p) - 15, np.array(p) + 15, (0, 0, 255), 2)
+            cv.line(cl2, np.array(p) - 15, np.array(p) + 15, (0, 0, 255), 2)
 
 
 if DEBUG: # ! simulation : process tareget
